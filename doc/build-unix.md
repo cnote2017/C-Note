@@ -1,15 +1,7 @@
 UNIX BUILD NOTES
 ====================
-Some notes on how to build Bitcoin in Unix. 
+Some notes on how to build C-Note in Unix. 
 
-To Build
----------------------
-
-	./autogen.sh
-	./configure
-	make
-
-This will build bitcoin-qt as well if the dependencies are met.
 
 Dependencies
 ---------------------
@@ -33,12 +25,12 @@ turned off by default.  See the configure options for upnp behavior desired:
 	--enable-upnp-default    UPnP support turned on by default at runtime
 
 Licenses of statically linked libraries:
- Berkeley DB   New BSD license with additional requirement that linked
-               software must be free open source
+ Berkeley DB   New BSD license with additional requirement that linked software must be free open source
  Boost         MIT-like license
  miniupnpc     New (3-clause) BSD license
 
 - For the versions used in the release, see doc/release-process.md under *Fetch and build inputs*.
+
 
 System requirements
 --------------------
@@ -46,6 +38,7 @@ System requirements
 C++ compilers are memory-hungry. It is recommended to have at least 1 GB of
 memory available when compiling Bitcoin Core. With 512MB of memory or less
 compilation will take much longer due to swap thrashing.
+
 
 Dependency Build Instructions: Ubuntu & Debian
 ----------------------------------------------
@@ -58,12 +51,6 @@ Build requirements:
 for Ubuntu 12.04 and later:
 
 	sudo apt-get install libboost-all-dev
-
- db4.8 packages are available [here](https://launchpad.net/~bitcoin/+archive/bitcoin).
- You can add the repository using the following command:
-
-        sudo add-apt-repository ppa:bitcoin/bitcoin
-        sudo apt-get update
 
  Ubuntu 12.04 and later have packages for libdb5.1-dev and libdb5.1++-dev,
  but using these will break binary wallet compatibility, and is not recommended.
@@ -83,15 +70,11 @@ To enable the change run
 
 	sudo apt-get update
 
-for other Ubuntu & Debian:
-
-	sudo apt-get install libdb4.8-dev
-	sudo apt-get install libdb4.8++-dev
-
 Optional:
 
 	sudo apt-get install libminiupnpc-dev (see --with-miniupnpc and --enable-upnp-default)
 
+	
 Dependencies for the GUI: Ubuntu & Debian
 -----------------------------------------
 
@@ -106,67 +89,51 @@ To build with Qt 4 you need the following:
 
 For Qt 5 you need the following:
 
-    sudo apt-get install libqt5gui5 libqt5core5 libqt5dbus5 qttools5-dev qttools5-dev-tools libprotobuf-dev
+ 	sudo apt-get install libqt5core5  (<--This wasn't required for 14.04 and 16.04)
+	sudo apt-get install libqt5gui5 libqt5dbus5 qttools5-dev qttools5-dev-tools libprotobuf-dev protobuf-compiler
 
 libqrencode (optional) can be installed with:
 
     sudo apt-get install libqrencode-dev
 
-Once these are installed, they will be found by configure and a bitcoin-qt executable will be
+Once these are installed, they will be found by configure and a cnote-qt executable will be
 built by default.
-
-Notes
------
-The release is built with GCC and then "strip bitcoind" to strip the debug
-symbols, which reduces the executable size by about 90%.
-
-
-miniupnpc
----------
-	tar -xzvf miniupnpc-1.6.tar.gz
-	cd miniupnpc-1.6
-	make
-	sudo su
-	make install
 
 
 Berkeley DB
 -----------
 It is recommended to use Berkeley DB 4.8. If you have to build it yourself:
 
-```bash
-BITCOIN_ROOT=$(pwd)
+	-- Contents of compile-db.sh which is located in the repository root ---------- 
+	#!/bin/sh
+	BITCOIN_ROOT=$(pwd)
 
-# Pick some path to install BDB to, here we create a directory within the bitcoin directory
-BDB_PREFIX="${BITCOIN_ROOT}/db4"
-mkdir -p $BDB_PREFIX
+	# Pick some path to install BDB to, here we create a directory within the bitcoin directory
+	BDB_PREFIX="${BITCOIN_ROOT}/db4"
+	mkdir -p $BDB_PREFIX
 
-# Fetch the source and verify that it is not tampered with
-wget 'http://download.oracle.com/berkeley-db/db-4.8.30.NC.tar.gz'
-echo '12edc0df75bf9abd7f82f821795bcee50f42cb2e5f76a6a281b85732798364ef  db-4.8.30.NC.tar.gz' | sha256sum -c
-# -> db-4.8.30.NC.tar.gz: OK
-tar -xzvf db-4.8.30.NC.tar.gz
+	if [ ! -d "db-4.8.30.NC" ]; then
+	  # Fetch the source and verify that it is not tampered with
+	  wget 'http://download.oracle.com/berkeley-db/db-4.8.30.NC.tar.gz'
+	  echo '12edc0df75bf9abd7f82f821795bcee50f42cb2e5f76a6a281b85732798364ef  db-4.8.30.NC.tar.gz' | sha256sum -c
+	  # -> db-4.8.30.NC.tar.gz: OK
+	  tar -xzvf db-4.8.30.NC.tar.gz
+	  # Build the library and install to our prefix
+	  cd db-4.8.30.NC/build_unix/
+	  #  Note: Do a static build so that it can be embedded into the exectuable, instead of having to find a .so at runtime
+	  ../dist/configure --enable-cxx --disable-shared --with-pic --prefix=$BDB_PREFIX
+	  make install
+	  cd $BITCOIN_ROOT
+	fi
+	
+	# Configure Bitcoin Core to use our own-built instance of BDB
+	./configure LDFLAGS="-L${BDB_PREFIX}/lib/" CPPFLAGS="-I${BDB_PREFIX}/include/"
 
-# Build the library and install to our prefix
-cd db-4.8.30.NC/build_unix/
-#  Note: Do a static build so that it can be embedded into the exectuable, instead of having to find a .so at runtime
-../dist/configure --enable-cxx --disable-shared --with-pic --prefix=$BDB_PREFIX
-make install
+	make
+	-------------------------------------------------------------------------------
 
-# Configure Bitcoin Core to use our own-built instance of BDB
-cd $BITCOIN_ROOT
-./configure (other args...) LDFLAGS="-L${BDB_PREFIX}/lib/" CPPFLAGS="-I${BDB_PREFIX}/include/"
-```
 
 **Note**: You only need Berkeley DB if the wallet is enabled (see the section *Disable-Wallet mode* below).
-
-Boost
------
-If you need to build Boost yourself:
-
-	sudo su
-	./bootstrap.sh
-	./bjam install
 
 
 Security
@@ -179,7 +146,6 @@ Hardening Flags:
 
 	./configure --enable-hardening
 	./configure --disable-hardening
-
 
 Hardening enables the following features:
 
@@ -217,6 +183,7 @@ Hardening enables the following features:
 
     The STK RW- means that the stack is readable and writeable but not executable.
 
+	
 Disable-wallet mode
 --------------------
 When the intention is to run only a P2P node without a wallet, bitcoin may be compiled in
@@ -229,3 +196,17 @@ In this case there is no dependency on Berkeley DB 4.8.
 Mining is also possible in disable-wallet mode, but only using the `getblocktemplate` RPC
 call not `getwork`.
 
+
+Notes
+-----
+The release is built with GCC and then "strip bitcoind" to strip the debug
+symbols, which reduces the executable size by about 90%.
+
+To Build
+---------------------
+
+	./autogen.sh
+	./compile-db.sh
+	./src/qt/cnote-qt
+
+This will build cnote-qt as well if the dependencies are met.

@@ -304,7 +304,7 @@ void BitcoinGUI::createActions(bool fIsTestnet)
     usedReceivingAddressesAction = new QAction(QIcon(":/icons/address-book"), tr("&Receiving addresses..."), this);
     usedReceivingAddressesAction->setStatusTip(tr("Show the list of used receiving addresses and labels"));
 
-    openAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_FileIcon), tr("Open &URI..."), this);
+    openAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_DesktopIcon), tr("Open &URI..."), this);
     openAction->setStatusTip(tr("Open a c-note: URI or payment request"));
 
     showHelpMessageAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&Command-line options"), this);
